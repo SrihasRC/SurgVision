@@ -1,0 +1,11 @@
+refer/
+venv/
+temp/
+ignore/
+practice/
+exps/
+medhack_yolov11/
+runs/
+yolo11n*
+coco*
+videos/
