@@ -1,0 +1,150 @@
+# YOLOv11 Segmentation Training Configuration
+# Optimized for surgical organ detection with NVIDIA MX550 + CPU
+
+# Dataset configuration
+dataset:
+  data_yaml: medhack_yolov11/data.yaml
+  img_size: 640
+  classes: 7
+  class_names:
+    - External Iliac Artery
+    - External Iliac Vein
+    - Obturator Nerve
+    - Ovary
+    - Ureter
+    - Uterine Artery
+    - uterus
+
+# Model configuration
+model:
+  size: n  # nano - best for MX550 (2GB VRAM) + CPU inference
+  # Options: n (nano), s (small), m (medium), l (large), x (xlarge)
+  # Recommendation: Use 'n' for fastest inference on your hardware
+  pretrained: true
+  task: segment
+
+# Training parameters
+training:
+  epochs: 150
+  batch_size: 8  # Optimized for MX550 2GB VRAM (reduce to 4 if OOM)
+  patience: 30  # Early stopping patience
+  save_period: 10  # Save checkpoint every N epochs
+  
+  # Hardware optimization
+  amp: true  # Automatic Mixed Precision
+  workers: 8  # Data loading workers
+  cache: false  # Don't cache images (save memory)
+  multi_scale: true  # Multi-scale training
+
+# Optimizer configuration
+optimizer:
+  name: AdamW  # Better for medical images than SGD
+  lr0: 0.001  # Initial learning rate
+  lrf: 0.01  # Final learning rate (lr0 * lrf)
+  momentum: 0.937
+  weight_decay: 0.0005
+  
+  # Learning rate scheduler
+  cos_lr: true  # Cosine learning rate scheduler
+  warmup_epochs: 3.0
+  warmup_momentum: 0.8
+  warmup_bias_lr: 0.1
+
+# Data augmentation for medical/surgical images
+augmentation:
+  # Color augmentations (conservative for medical images)
+  hsv_h: 0.010  # Hue augmentation (minimal for medical)
+  hsv_s: 0.5    # Saturation
+  hsv_v: 0.3    # Brightness/Value
+  
+  # Geometric augmentations
+  degrees: 5.0      # Rotation ±5° (conservative for organs)
+  translate: 0.1    # Translation 10% (minimal shift)
+  scale: 0.3        # Scale ±30% (account for zoom levels)
+  shear: 0.0        # No shear (organs don't shear)
+  perspective: 0.0  # No perspective (consistent endoscopic view)
+  
+  # Flip augmentations
+  flipud: 0.0  # No vertical flip (organs have orientation)
+  fliplr: 0.5  # 50% horizontal flip (left/right views)
+  
+  # Advanced augmentations
+  mosaic: 0.8        # Mosaic augmentation (80% probability)
+  mixup: 0.1         # Mixup augmentation (light)
+  copy_paste: 0.2    # Copy-paste organs (useful for rare organs)
+  auto_augment: randaugment
+  erasing: 0.2       # Random erasing (simulate occlusions)
+  crop_fraction: 1.0 # No initial cropping
+  close_mosaic: 10   # Disable mosaic last 10 epochs
+
+# Segmentation-specific parameters
+segmentation:
+  overlap_mask: true  # Allow overlapping masks (organs can overlap)
+  mask_ratio: 4       # Mask downsample ratio
+  retina_masks: false # Use full-resolution masks
+
+# Loss weights
+loss:
+  box: 7.5   # Box loss weight
+  cls: 0.5   # Classification loss weight
+  dfl: 1.5   # Distribution Focal Loss weight
+  
+# Inference parameters
+inference:
+  conf_threshold: 0.25  # Confidence threshold
+  iou_threshold: 0.45   # IoU threshold for NMS
+  max_det: 300          # Maximum detections per image
+  agnostic_nms: false   # Class-agnostic NMS
+
+# Validation parameters
+validation:
+  val_frequency: 1  # Validate every N epochs
+  plots: true       # Generate validation plots
+  verbose: true     # Verbose output
+
+# Output configuration
+output:
+  project: runs/segment
+  name: surgical_organs
+  exist_ok: true
+  save: true
+  save_txt: false
+  save_conf: false
+
+# Advanced options
+advanced:
+  seed: 42              # Random seed for reproducibility
+  deterministic: false  # Not fully deterministic (faster training)
+  single_cls: false     # Multi-class detection
+  label_smoothing: 0.0  # No label smoothing
+  nbs: 64              # Nominal batch size
+  rect: false          # Rectangular training
+  dropout: 0.0         # Dropout (not used in YOLO)
+
+# Hardware recommendations
+hardware:
+  recommended_batch_sizes:
+    mx550_2gb: 8      # NVIDIA MX550 with 2GB VRAM
+    mx550_2gb_safe: 4 # If out of memory
+    cpu_only: 2       # CPU-only training
+    rtx3060_6gb: 16   # If you upgrade to RTX 3060
+  
+  inference_fps:
+    mx550_gpu: "15-25 FPS at 640x640"
+    cpu_only: "3-5 FPS at 640x640"
+    nano_best_for: "Low-power deployment, edge devices, CPU inference"
+  
+  model_sizes:
+    nano: "~6M parameters, ~3.2 MB model size"
+    small: "~11M parameters, ~6 MB model size"
+    medium: "~25M parameters, ~13 MB model size"
+
+# Training tips for medical imaging
+tips:
+  - Use nano model for real-time inference on MX550
+  - Increase batch_size to 16 if you have more VRAM
+  - Conservative augmentation preserves anatomical structure
+  - Copy-paste augmentation helps with rare organ classes
+  - Early stopping prevents overfitting on small medical datasets
+  - Monitor both box and segmentation mAP during training
+  - Export to ONNX for faster CPU inference in production
