@@ -403,13 +403,16 @@ class SurgicalAssistanceSystem:
         if results[0].masks is None or not self.show_masks:
             return frame
         
-        # Use YOLO's default plot for consistent colors
+        # Use YOLO's default plot for consistent colors with transparency
         annotated_frame = results[0].plot(
             boxes=False,
             labels=False,
             conf=False,
             masks=self.show_masks
         )
+        
+        # Blend with original frame for transparency
+        annotated_frame = cv2.addWeighted(frame, 1 - MASK_ALPHA, annotated_frame, MASK_ALPHA, 0)
         
         # Add custom labels if enabled
         if self.show_labels and results[0].masks is not None:
