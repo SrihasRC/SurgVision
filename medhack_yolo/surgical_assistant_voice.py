@@ -389,9 +389,9 @@ class SurgicalAssistanceSystem:
             for organ_id in events['new']:
                 self.voice_announcer.announce(f"{ORGAN_NAMES[organ_id]} identified")
         
-        # Announce reappearances
-        for organ_id in events['reappeared']:
-            self.voice_announcer.announce(f"{ORGAN_NAMES[organ_id]} back in view")
+        # Announce reappearances (disabled - too noisy)
+        # for organ_id in events['reappeared']:
+        #     self.voice_announcer.announce(f"{ORGAN_NAMES[organ_id]} back in view")
         
         # Announce disappearances
         if ALERT_ON_DISAPPEARANCE:
@@ -403,54 +403,41 @@ class SurgicalAssistanceSystem:
         if results[0].masks is None or not self.show_masks:
             return frame
         
-        overlay = frame.copy()
+        # Use YOLO's default plot for consistent colors
+        annotated_frame = results[0].plot(
+            boxes=False,
+            labels=False,
+            conf=False,
+            masks=self.show_masks
+        )
         
-        # Colors for each organ
-        colors = [
-            (255, 0, 0),      # External Iliac Artery - Red
-            (0, 0, 255),      # External Iliac Vein - Blue
-            (255, 255, 0),    # Obturator Nerve - Yellow
-            (255, 0, 255),    # Ovary - Magenta
-            (0, 255, 255),    # Ureter - Cyan
-            (255, 128, 0),    # Uterine Artery - Orange
-            (128, 0, 255),    # Uterus - Purple
-        ]
+        # Add custom labels if enabled
+        if self.show_labels and results[0].masks is not None:
+            boxes = results[0].boxes.xyxy.cpu().numpy()
+            classes = results[0].boxes.cls.cpu().numpy().astype(int)
         
-        # Get detection data
-        masks = results[0].masks.data.cpu().numpy()
-        boxes = results[0].boxes.xyxy.cpu().numpy()
-        confs = results[0].boxes.conf.cpu().numpy()
-        classes = results[0].boxes.cls.cpu().numpy().astype(int)
-        
-        h, w = frame.shape[:2]
-        
-        for mask, box, conf, cls_id in zip(masks, boxes, confs, classes):
-            # Apply organ filter
-            if self.filter_organs is not None and cls_id not in self.filter_organs:
-                continue
-            
-            # Resize mask
-            mask_resized = cv2.resize(mask, (w, h))
-            mask_binary = (mask_resized > 0.5).astype(np.uint8)
-            
-            color = colors[cls_id % len(colors)]
-            
-            # Draw mask
-            overlay[mask_binary > 0] = color
-            
-            # Draw label
-            if self.show_labels:
-                x1, y1 = int(box[0]), int(box[1])
+            for box, cls_id in zip(boxes, classes):
+                # Apply organ filter
+                if self.filter_organs is not None and cls_id not in self.filter_organs:
+                    continue
+                
+                # Get label position
+                x1, y1, x2, y2 = map(int, box)
+                label_x = (x1 + x2) // 2
+                label_y = (y1 + y2) // 2
+                
+                # Get label text
                 label = ORGAN_NAMES.get(int(cls_id), f"Class {cls_id}")
                 
+                # Draw label with background
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                cv2.rectangle(overlay, (x1, y1 - 25), (x1 + len(label) * 12, y1), color, -1)
-                cv2.putText(overlay, label, (x1 + 5, y1 - 5), font, 0.6, (255, 255, 255), 2)
+                (text_w, text_h), _ = cv2.getTextSize(label, font, 0.5, 1)
+                cv2.rectangle(annotated_frame, (label_x - 5, label_y - text_h - 5),
+                            (label_x + text_w + 5, label_y + 5), (0, 0, 0), -1)
+                cv2.putText(annotated_frame, label, (label_x, label_y),
+                          font, 0.5, (255, 255, 255), 1)
         
-        # Blend
-        frame_out = cv2.addWeighted(frame, 1 - MASK_ALPHA, overlay, MASK_ALPHA, 0)
-        
-        return frame_out
+        return annotated_frame
     
     def run(self):
         """Main loop."""
@@ -501,7 +488,7 @@ class SurgicalAssistanceSystem:
                 if self.tracker.current_detections:
                     y_pos = 100
                     for organ_id in sorted(self.tracker.current_detections):
-                        cv2.putText(frame, f"✓ {ORGAN_NAMES[organ_id]}", (10, y_pos),
+                        cv2.putText(frame, f"[*] {ORGAN_NAMES[organ_id]}", (10, y_pos),
                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
                         y_pos += 25
                 
