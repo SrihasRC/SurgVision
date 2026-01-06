@@ -9,3 +9,5 @@ runs/
 yolo11n*
 coco*
 videos/
+*/*.mp4
+*/*.onnx
