@@ -63,7 +63,38 @@ def _generate_mjpeg_frames(
                 retina_masks=True,
             )[0]
 
-            annotated = results.plot()
+            # Draw masks only (no boxes, no built-in labels)
+            annotated = results.plot(boxes=False, labels=False, conf=False)
+
+            # Manually draw class labels on each detection (like inference_video.py)
+            if results.masks is not None:
+                for i, box in enumerate(results.boxes):
+                    class_id = int(box.cls[0])
+                    class_name = model.names[class_id]
+                    # Get bounding box center for label position
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    lx = (x1 + x2) // 2
+                    ly = (y1 + y2) // 2
+                    # Draw label with dark background
+                    (tw, th), _ = cv2.getTextSize(
+                        class_name, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1
+                    )
+                    cv2.rectangle(
+                        annotated,
+                        (lx - 5, ly - th - 5),
+                        (lx + tw + 5, ly + 5),
+                        (0, 0, 0),
+                        -1,
+                    )
+                    cv2.putText(
+                        annotated,
+                        class_name,
+                        (lx, ly),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        (255, 255, 255),
+                        1,
+                    )
 
             # Add progress bar to frame
             h, w = annotated.shape[:2]
