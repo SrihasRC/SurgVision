@@ -46,12 +46,26 @@ export interface VideoResponse {
   processing_time_s: number;
 }
 
+export interface OutputFolder {
+  name: string;
+  path: string;
+  video_count: number;
+  subfolder_count: number;
+}
+
 export interface OutputFile {
   name: string;
+  path: string;
   size_mb: number;
   created: string;
   thumbnail_url: string;
   video_url: string;
+}
+
+export interface OutputListing {
+  current_path: string;
+  folders: OutputFolder[];
+  files: OutputFile[];
 }
 
 export interface HealthResponse {
@@ -127,25 +141,30 @@ export async function predictWithDistances(
   return res.json();
 }
 
-// ─────── Outputs ───────
-export async function listOutputs(): Promise<OutputFile[]> {
-  const res = await fetch(`${API_BASE}/outputs/`);
+// ─────── Outputs (subfolder browsing) ───────
+export async function listOutputs(path: string = ""): Promise<OutputListing> {
+  const params = path ? `?path=${encodeURIComponent(path)}` : "";
+  const res = await fetch(`${API_BASE}/outputs/${params}`);
   if (!res.ok) throw new Error("Failed to list outputs");
   return res.json();
 }
 
-export function getOutputVideoUrl(filename: string): string {
-  return `${API_BASE}/outputs/${filename}`;
+export function getOutputVideoUrl(filepath: string): string {
+  return `${API_BASE}/outputs/file/${filepath}`;
 }
 
-export function getOutputThumbnailUrl(filename: string): string {
-  return `${API_BASE}/outputs/${filename}/thumbnail`;
+export function getOutputThumbnailUrl(filepath: string): string {
+  return `${API_BASE}/outputs/thumbnail/${filepath}`;
 }
 
-// ─────── Live Stream ───────
-export function getLiveStreamUrl(
+// ─────── Live Stream (video upload) ───────
+export function getStreamStartUrl(
   modelName: string,
   conf: number = 0.25
 ): string {
-  return `${API_BASE}/stream/live?model_name=${modelName}&conf=${conf}`;
+  return `${API_BASE}/stream/start?model_name=${modelName}&conf=${conf}`;
+}
+
+export async function stopStream(sessionId: string): Promise<void> {
+  await fetch(`${API_BASE}/stream/stop/${sessionId}`, { method: "POST" });
 }
