@@ -9,6 +9,7 @@ import {
   Video,
   Cpu,
   Activity,
+  Mic,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -17,6 +18,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/analysis", label: "Analysis", icon: ScanSearch },
   { href: "/live", label: "Live Preview", icon: Video },
+  { href: "/voice-live", label: "Voice Live", icon: Mic },
   { href: "/outputs", label: "Server Outputs", icon: FolderOutput },
   { href: "/models", label: "Models", icon: Cpu },
 ];

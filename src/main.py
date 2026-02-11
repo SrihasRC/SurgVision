@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import MODEL_REGISTRY, DEFAULT_MODEL
-from src.routers import predict, models, outputs, stream
+from src.routers import predict, models, outputs, stream, tts
 from src.services.yolo_service import model_manager
 
 
@@ -46,6 +46,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Session-Id"],
 )
 
 # Include routers
@@ -53,6 +54,7 @@ app.include_router(models.router)
 app.include_router(predict.router)
 app.include_router(outputs.router)
 app.include_router(stream.router)
+app.include_router(tts.router)
 
 
 @app.get("/", tags=["Health"])

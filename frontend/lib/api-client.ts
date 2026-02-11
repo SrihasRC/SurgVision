@@ -165,6 +165,60 @@ export function getStreamStartUrl(
   return `${API_BASE}/stream/start?model_name=${modelName}&conf=${conf}`;
 }
 
+// Two-step flow for voice-live (avoids CORS header issue)
+export async function createStreamSession(
+  file: File,
+  modelName: string,
+  conf: number = 0.25
+): Promise<{ session_id: string; feed_url: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(
+    `${API_BASE}/stream/create?model_name=${modelName}&conf=${conf}`,
+    { method: "POST", body: form }
+  );
+  if (!res.ok) throw new Error("Failed to create stream session");
+  return res.json();
+}
+
+export function getStreamFeedUrl(sessionId: string): string {
+  return `${API_BASE}/stream/feed/${sessionId}`;
+}
+
 export async function stopStream(sessionId: string): Promise<void> {
   await fetch(`${API_BASE}/stream/stop/${sessionId}`, { method: "POST" });
+}
+
+export interface CommandResponse {
+  status: string;
+  confirmation: string;
+  config: {
+    show_masks: boolean;
+    show_labels: boolean;
+    hidden_classes: string[];
+  };
+}
+
+export async function sendStreamCommand(
+  sessionId: string,
+  command: string,
+  className?: string
+): Promise<CommandResponse> {
+  const res = await fetch(`${API_BASE}/stream/command/${sessionId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ command, class_name: className }),
+  });
+  if (!res.ok) throw new Error("Command failed");
+  return res.json();
+}
+
+export async function speakTts(text: string): Promise<ArrayBuffer> {
+  const res = await fetch(`${API_BASE}/tts/speak`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error("TTS failed");
+  return res.arrayBuffer();
 }
