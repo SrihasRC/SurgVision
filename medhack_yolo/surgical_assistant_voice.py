@@ -21,7 +21,7 @@ import subprocess
 # ============================================================================
 
 MODEL_PATH = 'best.pt'
-VIDEO_SOURCE = 'iv2.mp4'  # 0 for webcam, or path to video file
+VIDEO_SOURCE = "tcp://10.214.112.54:5000"  # Input video path (or 0 for webcam)
 CONF_THRESHOLD = 0.40
 
 # Voice Alert Settings
@@ -82,12 +82,18 @@ class VoiceAnnouncer:
                         tts = gTTS(text=text, lang='en', slow=False)
                         tts.save(temp_file)
                         
-                        # Play audio using system player
+                        # Play audio using system player (with speed adjustment)
                         if os.name == 'posix':  # Linux/Mac
-                            # Try mpg123, then mpg321, then ffplay
-                            for player in ['mpg123', 'mpg321', 'ffplay -nodisp -autoexit']:
+                            # Try mpg123 with speed option, then mpg321, then ffplay
+                            # Speed: 1.0 = normal, 1.2 = 20% faster, 1.5 = 50% faster
+                            speed = 1.5  # Adjust this value: 1.0-2.0 recommended
+                            for player_cmd in [
+                                ['mpg123', '-d', str(speed), temp_file],
+                                ['mpg321', temp_file],
+                                ['ffplay', '-nodisp', '-autoexit', '-af', f'atempo={speed}', temp_file]
+                            ]:
                                 try:
-                                    subprocess.run(player.split() + [temp_file], 
+                                    subprocess.run(player_cmd, 
                                                  stdout=subprocess.DEVNULL, 
                                                  stderr=subprocess.DEVNULL,
                                                  check=True)

@@ -8,9 +8,9 @@ import cv2
 import time
 
 # Configuration
-MODEL_PATH = 'best.pt'  # Your trained model
-VIDEO_PATH = 'iv2.mp4'  # Input video path (or 0 for webcam)
-OUTPUT_PATH = 'ov2.mp4'  # Output video path
+MODEL_PATH = '26n.pt'  # Your trained model
+VIDEO_PATH = "../chunk_01.mp4"  # Input video path (or 0 for webcam)
+OUTPUT_PATH = '../test-3.mp4'  # Output video path
 CONF_THRESHOLD = 0.40  # Confidence threshold
 
 # Display options
