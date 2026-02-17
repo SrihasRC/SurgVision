@@ -11,3 +11,15 @@ coco*
 videos/
 */*.mp4
 */*.onnx
+*/*.pt
+models/
+*.mp4
+*/*.mp4
+*/*/*/.mp4
+*.avi
+*/*.avi
+*/*/*/.avi
+*.log
+*/*.log
+*/*/*/.log
+run.txt
