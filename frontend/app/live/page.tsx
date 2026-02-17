@@ -226,7 +226,7 @@ export default function LivePage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="video/*"
+                accept=".mp4,.avi,.mov,.mkv,.webm,video/mp4,video/x-msvideo,video/quicktime,video/x-matroska,video/webm"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
