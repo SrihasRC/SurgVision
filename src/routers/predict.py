@@ -151,7 +151,9 @@ async def predict_on_video(
         with open(input_path, "wb") as f:
             f.write(await file.read())
 
-        output_filename = f"{Path(file.filename).stem}_predicted.mp4"
+        # input_path is already set above from UPLOAD_DIR / file.filename
+        # We'll always output as .mp4 for browser compatibility
+        output_filename = f"{Path(file.filename or 'video').stem}_predicted.mp4"
         output_path = str(OUTPUT_DIR / output_filename)
 
         result = predict_video(
@@ -171,8 +173,17 @@ async def download_video(filename: str):
     file_path = OUTPUT_DIR / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail=f"File not found: {filename}")
+
+    media_types = {
+        ".mp4": "video/mp4",
+        ".avi": "video/x-msvideo",
+        ".mkv": "video/x-matroska",
+        ".mov": "video/quicktime",
+        ".webm": "video/webm",
+    }
+    media_type = media_types.get(file_path.suffix.lower(), "video/mp4")
     return FileResponse(
         str(file_path),
-        media_type="video/mp4",
+        media_type=media_type,
         filename=filename,
     )

@@ -226,7 +226,8 @@ async def create_stream(
     Upload a video file and receive a session_id + feed URL.
     Use GET /stream/feed/{session_id} to consume the MJPEG stream.
     """
-    suffix = Path(file.filename or "video.mp4").suffix
+    input_filename = file.filename or "video.mp4"
+    suffix = Path(input_filename).suffix or ".mp4"
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     shutil.copyfileobj(file.file, tmp)
     tmp.close()
@@ -263,9 +264,10 @@ def feed_stream(session_id: str):
 async def start_stream(
     file: UploadFile = File(...),
     model_name: str = Query(default=DEFAULT_MODEL),
-    conf: float = Query(default=DEFAULT_CONF, ge=0.05, le=0.95),
+    conf: float = Query(default=DEFAULT_CONF, ge=0.05, le=1.0),
 ):
-    suffix = Path(file.filename or "video.mp4").suffix
+    input_filename = file.filename or "video.mp4"
+    suffix = Path(input_filename).suffix or ".mp4"
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     shutil.copyfileobj(file.file, tmp)
     tmp.close()
